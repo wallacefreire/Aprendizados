@@ -12,7 +12,7 @@ func fibonacci(posicao uint) uint {
 func main() {
 	fmt.Println("Funções Recursivas")
 
-	posicao := uint(12)
+	posicao := uint(15)
 
 	for i := uint(0); i <= posicao; i++ {
 		fmt.Println(fibonacci(i))
