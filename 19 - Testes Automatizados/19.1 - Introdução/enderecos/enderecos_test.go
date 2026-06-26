@@ -1,5 +1,3 @@
-// Teste de unidade
-
 package enderecos
 
 import "testing"
