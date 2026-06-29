@@ -7,6 +7,12 @@
 </head>
 <body>
     <h2>Página Principal</h2>
-    <h4>Conta Comigo! {{ .Email }}</h4>
+    <button id="button">Conta Comigo!</button>
+    <script>
+        var botaoContaComigo = document.getElementById("button");
+        botaoContaComigo.onclick = function() {
+            alert("Contando comigo com sucesso!")
+        }
+    </script>
 </body>
 </html>
