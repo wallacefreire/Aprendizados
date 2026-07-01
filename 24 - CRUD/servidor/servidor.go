@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type funcionario struct {
@@ -96,5 +99,80 @@ func BuscarFuncionarios(w http.ResponseWriter, r *http.Request) {
 
 // BuscarFuncionario traz um funcionário específico do Banco de Dados
 func BuscarFuncionario(w http.ResponseWriter, r *http.Request) {
+	parametros := mux.Vars(r)
 
+	ID, erro := strconv.ParseUint(parametros["id"], 10, 32)
+	if erro != nil {
+		w.Write([]byte("Erro ao converter o parâmetro para inteiro"))
+		return
+	}
+
+	db, erro := banco.Conectar()
+	if erro != nil {
+		w.Write([]byte("Erro ao conectar ao banco de dados"))
+		return
+	}
+
+	linha, erro := db.Query("SELECT * FROM funcionarios WHERE id = ?", ID)
+	if erro != nil {
+		w.Write([]byte("Erro ao buscar o funcionário!"))
+		return
+	}
+
+	var funcionario funcionario
+	if linha.Next() {
+		if erro := linha.Scan(&funcionario.ID, &funcionario.Nome, &funcionario.Email); erro != nil {
+			w.Write([]byte("Erro ao escanear o funcionário"))
+			return
+		}
+	}
+
+	if erro := json.NewEncoder(w).Encode(funcionario); erro != nil {
+		w.Write([]byte("Erro ao converter o funcionário para JSON"))
+		return
+	}
+}
+
+// AtuaizarFuncionario altera os dados de um funcionário no Banco de Dados
+func AtualizarFuncionario(w http.ResponseWriter, r *http.Request) {
+	parametros := mux.Vars(r)
+
+	ID, erro := strconv.ParseUint(parametros["id"], 10, 32)
+	if erro != nil {
+		w.Write([]byte("Erro ao converter o parâmetro para inteiro"))
+		return
+	}
+
+	corpoRequisicao, erro := io.ReadAll(r.Body)
+	if erro != nil {
+		w.Write([]byte("Erro ao ler o corpo da requisição"))
+		return
+	}
+
+	var funcionario funcionario
+	if erro := json.Unmarshal(corpoRequisicao, &funcionario); erro != nil {
+		w.Write([]byte("Erro ao converter o corpo da requisição para struct"))
+		return
+	}
+
+	db, erro := banco.Conectar()
+	if erro != nil {
+		w.Write([]byte("Erro ao conectar ao banco de dados"))
+		return
+	}
+	defer db.Close()
+
+	statement, erro := db.Prepare("UPDATE funcionarios SET nome = ?, email = ? WHERE id = ?")
+	if erro != nil {
+		w.Write([]byte("Erro ao criar o statement"))
+		return
+	}
+	defer statement.Close()
+
+	if _, erro := statement.Exec(funcionario.Nome, funcionario.Email, ID); erro != nil {
+		w.Write([]byte("Erro ao atualizar o funcionário"))
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
